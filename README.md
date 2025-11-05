@@ -107,15 +107,49 @@ Returns an array of search results with the following structure:
 npm run build
 ```
 
+### Testing
+
+Run the test suite:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+Generate coverage report:
+
+```bash
+npm run test:coverage
+```
+
+The test suite includes:
+- Unit tests for HTML parsing logic
+- Integration tests for search functionality with mocked HTTP requests
+- Tests for MCP server tool interface
+- Error handling tests
+
 ### Project Structure
 
 ```
 mcp-wake-county-library/
 ├── src/
-│   └── index.ts          # Main server implementation
-├── dist/                 # Compiled JavaScript output
+│   ├── index.ts              # Main MCP server implementation
+│   ├── library-search.ts     # Search and parsing logic
+│   └── __tests__/            # Test files
+│       ├── library-search.test.ts
+│       ├── server.test.ts
+│       └── mocks/
+│           └── searchResults.html
+├── dist/                     # Compiled JavaScript output
+├── coverage/                 # Test coverage reports
 ├── package.json
 ├── tsconfig.json
+├── jest.config.js
 └── README.md
 ```
 
