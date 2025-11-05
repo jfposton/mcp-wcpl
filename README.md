@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides search capabilities for the Wake County Public Library catalog.
 
+<a href="https://glama.ai/mcp/servers/@jfposton/mcp-wcpl-">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@jfposton/mcp-wcpl-/badge" alt="Wake County Public Library MCP server" />
+</a>
+
 ## Features
 
 - Search the Wake County Public Library catalog
