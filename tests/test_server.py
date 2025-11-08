@@ -1,6 +1,5 @@
 """Tests for the MCP server."""
 
-import pytest
 from mcp_wcpl.server import mcp, search_library
 
 
