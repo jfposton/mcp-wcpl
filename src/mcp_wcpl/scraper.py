@@ -12,7 +12,9 @@ from bs4 import BeautifulSoup
 class LibraryScraper(Protocol):
     """Protocol for library catalog scrapers."""
 
-    def search(self, query: str, search_source: str = "local", limit: int = 10) -> list[dict[str, str]]:
+    def search(
+        self, query: str, search_source: str = "local", limit: int = 10
+    ) -> list[dict[str, str]]:
         """Search the library catalog.
 
         Args:
@@ -49,7 +51,9 @@ class WakeCountyLibraryScraper:
         """
         self.timeout = timeout
 
-    def search(self, query: str, search_source: str = "local", limit: int = 10) -> list[dict[str, str]]:
+    def search(
+        self, query: str, search_source: str = "local", limit: int = 10
+    ) -> list[dict[str, str]]:
         """Search the library catalog.
 
         Args:
@@ -60,11 +64,7 @@ class WakeCountyLibraryScraper:
         Returns:
             List of dictionaries with keys: title, author, format, availability
         """
-        params = {
-            "lookfor": query,
-            "searchSource": search_source,
-            "view": "list"
-        }
+        params = {"lookfor": query, "searchSource": search_source, "view": "list"}
 
         try:
             response = httpx.get(
@@ -72,24 +72,16 @@ class WakeCountyLibraryScraper:
                 params=params,
                 headers=self.HEADERS,
                 timeout=self.timeout,
-                follow_redirects=True
+                follow_redirects=True,
             )
             response.raise_for_status()
             results = self._parse_results(response.text)
             return results[:limit]
 
         except httpx.HTTPError as e:
-            return [{
-                "error": "HTTP_ERROR",
-                "message": str(e),
-                "type": "httpx.HTTPError"
-            }]
+            return [{"error": "HTTP_ERROR", "message": str(e), "type": "httpx.HTTPError"}]
         except Exception as e:
-            return [{
-                "error": "UNEXPECTED_ERROR",
-                "message": str(e),
-                "type": type(e).__name__
-            }]
+            return [{"error": "UNEXPECTED_ERROR", "message": str(e), "type": type(e).__name__}]
 
     def _parse_results(self, html: str) -> list[dict[str, str]]:
         """Parse HTML search results.
@@ -100,39 +92,43 @@ class WakeCountyLibraryScraper:
         Returns:
             List of dictionaries containing book information
         """
-        soup = BeautifulSoup(html, 'lxml')
+        soup = BeautifulSoup(html, "lxml")
         results = []
 
         # Try primary selector first, then fallback to alternative
-        result_items = soup.select('.result')
+        result_items = soup.select(".result")
         if not result_items:
             result_items = soup.select('div[id^="result"]')
 
         for item in result_items:
             # Extract title
-            title_elem = item.select_one('.result-title a, .title a')
+            title_elem = item.select_one(".result-title a, .title a")
             title = title_elem.get_text(strip=True) if title_elem else "Unknown Title"
 
             # Extract author
-            author_elem = item.select_one('.result-author, .author')
+            author_elem = item.select_one(".result-author, .author")
             author = author_elem.get_text(strip=True) if author_elem else "Unknown Author"
             # Clean up "by " prefix if present
-            if author.lower().startswith('by '):
+            if author.lower().startswith("by "):
                 author = author[3:].strip()
 
             # Extract format
-            format_elem = item.select_one('.result-format, .format, .iconlabel')
+            format_elem = item.select_one(".result-format, .format, .iconlabel")
             format_type = format_elem.get_text(strip=True) if format_elem else "Unknown Format"
 
             # Extract availability
-            availability_elem = item.select_one('.status, .availability')
-            availability = availability_elem.get_text(strip=True) if availability_elem else "Unknown"
+            availability_elem = item.select_one(".status, .availability")
+            availability = (
+                availability_elem.get_text(strip=True) if availability_elem else "Unknown"
+            )
 
-            results.append({
-                "title": title,
-                "author": author,
-                "format": format_type,
-                "availability": availability
-            })
+            results.append(
+                {
+                    "title": title,
+                    "author": author,
+                    "format": format_type,
+                    "availability": availability,
+                }
+            )
 
         return results

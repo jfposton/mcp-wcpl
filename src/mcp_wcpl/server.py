@@ -12,6 +12,7 @@ mcp = FastMCP("mcp-wcpl")
 # Initialize the scraper
 scraper: LibraryScraper = WakeCountyLibraryScraper()
 
+
 @mcp.tool()
 def search_library(
     query: str, searchSource: str = "local", limit: int = 10

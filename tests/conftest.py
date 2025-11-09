@@ -9,23 +9,25 @@ class MockLibraryScraper:
             "title": "Python Programming: An Introduction to Computer Science",
             "author": "John Zelle",
             "format": "Book",
-            "availability": "Available"
+            "availability": "Available",
         },
         {
             "title": "Learning Python",
             "author": "Mark Lutz",
             "format": "Book",
-            "availability": "Checked Out"
+            "availability": "Checked Out",
         },
         {
             "title": "Python Crash Course",
             "author": "Eric Matthes",
             "format": "eBook",
-            "availability": "Available"
+            "availability": "Available",
         },
     ]
 
-    def search(self, query: str, search_source: str = "local", limit: int = 10) -> list[dict[str, str]]:
+    def search(
+        self, query: str, search_source: str = "local", limit: int = 10
+    ) -> list[dict[str, str]]:
         """Return mock search results.
 
         Args:
