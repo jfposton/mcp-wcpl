@@ -52,57 +52,22 @@ class WakeCountyLibraryScraper:
         """
         # Input validation
         if not query or not query.strip():
-            return [
-                {
-                    "title": "Error: Search query cannot be empty",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Search query cannot be empty"}]
 
         # Validate query length (most URLs have ~2000 char limit, be conservative)
         if len(query) > 500:
-            return [
-                {
-                    "title": "Error: Search query too long (max 500 characters)",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Search query too long (max 500 characters)"}]
 
         # Validate search source
         if search_source not in ("local", "all"):
-            return [
-                {
-                    "title": "Error: Invalid search source (must be 'local' or 'all')",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Invalid search source (must be 'local' or 'all')"}]
 
         # Validate limit
         if not isinstance(limit, int) or limit < 1:
-            return [
-                {
-                    "title": "Error: Limit must be a positive integer",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Limit must be a positive integer"}]
 
         if limit > 100:
-            return [
-                {
-                    "title": "Error: Limit too large (max 100)",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Limit too large (max 100)"}]
 
         params = {"lookfor": query.strip(), "searchSource": search_source, "view": "list"}
 
@@ -122,26 +87,12 @@ class WakeCountyLibraryScraper:
             # Log detailed error internally for debugging
             logger.error(f"HTTP error during library search: {e}", exc_info=True)
             # Return sanitized error to user
-            return [
-                {
-                    "title": "Error: Unable to connect to library catalog",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Unable to connect to library catalog"}]
         except Exception as e:
             # Log detailed error internally for debugging
             logger.error(f"Unexpected error during library search: {e}", exc_info=True)
             # Return generic sanitized error to user
-            return [
-                {
-                    "title": "Error: Search failed. Please try again later",
-                    "author": "",
-                    "format": "",
-                    "availability": "",
-                }
-            ]
+            return [{"error": "Search failed. Please try again later"}]
 
     def _parse_results(self, html: str) -> list[dict[str, str]]:
         """Parse HTML search results.

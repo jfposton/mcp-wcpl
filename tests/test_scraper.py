@@ -29,16 +29,22 @@ def test_wake_county_scraper_result_structure():
     # Should return at least something (even if it's an error)
     assert len(results) > 0
 
-    # Each result should have the expected fields (both errors and books use same structure)
+    # Each result should either be an error or a book
     for item in results:
-        assert "title" in item
-        assert "author" in item
-        assert "format" in item
-        assert "availability" in item
-        assert isinstance(item["title"], str)
-        assert isinstance(item["author"], str)
-        assert isinstance(item["format"], str)
-        assert isinstance(item["availability"], str)
+        if "error" in item:
+            # Error response - should only have error key
+            assert isinstance(item["error"], str)
+            assert len(item["error"]) > 0
+        else:
+            # Book response - should have all book fields
+            assert "title" in item
+            assert "author" in item
+            assert "format" in item
+            assert "availability" in item
+            assert isinstance(item["title"], str)
+            assert isinstance(item["author"], str)
+            assert isinstance(item["format"], str)
+            assert isinstance(item["availability"], str)
 
 
 def test_wake_county_scraper_respects_limit():
@@ -69,12 +75,12 @@ def test_wake_county_scraper_rejects_empty_query():
 
     result = scraper.search("")
     assert len(result) == 1
-    assert "Error" in result[0]["title"]
-    assert "empty" in result[0]["title"].lower()
+    assert "error" in result[0]
+    assert "empty" in result[0]["error"].lower()
 
     result_whitespace = scraper.search("   ")
     assert len(result_whitespace) == 1
-    assert "Error" in result_whitespace[0]["title"]
+    assert "error" in result_whitespace[0]
 
 
 def test_wake_county_scraper_rejects_long_query():
@@ -85,8 +91,8 @@ def test_wake_county_scraper_rejects_long_query():
     result = scraper.search(long_query)
 
     assert len(result) == 1
-    assert "Error" in result[0]["title"]
-    assert "too long" in result[0]["title"].lower()
+    assert "error" in result[0]
+    assert "too long" in result[0]["error"].lower()
 
 
 def test_wake_county_scraper_rejects_invalid_search_source():
@@ -95,8 +101,8 @@ def test_wake_county_scraper_rejects_invalid_search_source():
 
     result = scraper.search("test", search_source="invalid")
     assert len(result) == 1
-    assert "Error" in result[0]["title"]
-    assert "search source" in result[0]["title"].lower()
+    assert "error" in result[0]
+    assert "search source" in result[0]["error"].lower()
 
 
 def test_wake_county_scraper_rejects_negative_limit():
@@ -105,8 +111,8 @@ def test_wake_county_scraper_rejects_negative_limit():
 
     result = scraper.search("test", limit=-1)
     assert len(result) == 1
-    assert "Error" in result[0]["title"]
-    assert "positive integer" in result[0]["title"].lower()
+    assert "error" in result[0]
+    assert "positive integer" in result[0]["error"].lower()
 
 
 def test_wake_county_scraper_rejects_zero_limit():
@@ -115,7 +121,7 @@ def test_wake_county_scraper_rejects_zero_limit():
 
     result = scraper.search("test", limit=0)
     assert len(result) == 1
-    assert "Error" in result[0]["title"]
+    assert "error" in result[0]
 
 
 def test_wake_county_scraper_rejects_excessive_limit():
@@ -124,8 +130,8 @@ def test_wake_county_scraper_rejects_excessive_limit():
 
     result = scraper.search("test", limit=101)
     assert len(result) == 1
-    assert "Error" in result[0]["title"]
-    assert "too large" in result[0]["title"].lower()
+    assert "error" in result[0]
+    assert "too large" in result[0]["error"].lower()
 
 
 def test_wake_county_scraper_accepts_max_valid_limit():
@@ -133,10 +139,10 @@ def test_wake_county_scraper_accepts_max_valid_limit():
     scraper = WakeCountyLibraryScraper()
 
     result = scraper.search("test", limit=100)
-    # Should not be an error message
-    if len(result) == 1 and "Error" in result[0].get("title", ""):
+    # Should not be a validation error
+    if len(result) == 1 and "error" in result[0]:
         # If it's an error, it should be about connection, not validation
-        assert "too large" not in result[0]["title"].lower()
+        assert "too large" not in result[0]["error"].lower()
 
 
 def test_wake_county_scraper_error_messages_are_sanitized():
@@ -151,10 +157,29 @@ def test_wake_county_scraper_error_messages_are_sanitized():
 
     for query, description in test_cases:
         result = scraper.search(query)
-        error_msg = result[0]["title"].lower()
+        assert "error" in result[0], f"Expected error response for {description}"
+        error_msg = result[0]["error"].lower()
 
         # Should not contain paths, exceptions, or stack traces
         assert "/" not in error_msg, f"Error for {description} contains path"
         assert "\\" not in error_msg, f"Error for {description} contains path"
         assert "traceback" not in error_msg, f"Error for {description} contains traceback"
         assert "exception" not in error_msg, f"Error for {description} exposes exception type"
+
+
+def test_error_response_format_is_distinct():
+    """Test that error responses are easily distinguishable from book responses."""
+    scraper = WakeCountyLibraryScraper()
+
+    # Get an error response
+    error_result = scraper.search("")
+
+    assert len(error_result) == 1
+    error_item = error_result[0]
+
+    # Error should only have "error" key, not book fields
+    assert "error" in error_item
+    assert "title" not in error_item
+    assert "author" not in error_item
+    assert "format" not in error_item
+    assert "availability" not in error_item
