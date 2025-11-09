@@ -2,8 +2,9 @@
 
 import pytest
 from mcp_wcpl.server import mcp, search_library
-from mcp_wcpl.scraper import LibraryScraper, MockLibraryScraper
+from mcp_wcpl.scraper import LibraryScraper
 import mcp_wcpl.server as server_module
+from .conftest import MockLibraryScraper
 
 
 @pytest.fixture(autouse=True)

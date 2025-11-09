@@ -1,7 +1,8 @@
 """Tests for the scraper module."""
 
 import pytest
-from mcp_wcpl.scraper import MockLibraryScraper, WakeCountyLibraryScraper
+from mcp_wcpl.scraper import WakeCountyLibraryScraper
+from .conftest import MockLibraryScraper
 
 
 def test_mock_scraper_returns_results():
