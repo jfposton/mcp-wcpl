@@ -13,6 +13,24 @@ from bs4 import BeautifulSoup
 logger = logging.getLogger(__name__)
 
 
+class ScraperError(Exception):
+    """Base exception for scraper errors."""
+
+    pass
+
+
+class ValidationError(ScraperError):
+    """Exception raised for invalid input parameters."""
+
+    pass
+
+
+class NetworkError(ScraperError):
+    """Exception raised for network/HTTP errors."""
+
+    pass
+
+
 class WakeCountyLibraryScraper:
     """Scraper for Wake County Public Library catalog."""
 
@@ -49,25 +67,30 @@ class WakeCountyLibraryScraper:
 
         Returns:
             List of dictionaries with keys: title, author, format, availability
+
+        Raises:
+            ValidationError: If input parameters are invalid
+            NetworkError: If unable to connect to the library catalog
+            ScraperError: For other unexpected errors
         """
         # Input validation
         if not query or not query.strip():
-            return [{"error": "Search query cannot be empty"}]
+            raise ValidationError("Search query cannot be empty")
 
         # Validate query length (most URLs have ~2000 char limit, be conservative)
         if len(query) > 500:
-            return [{"error": "Search query too long (max 500 characters)"}]
+            raise ValidationError("Search query too long (max 500 characters)")
 
         # Validate search source
         if search_source not in ("local", "all"):
-            return [{"error": "Invalid search source (must be 'local' or 'all')"}]
+            raise ValidationError("Invalid search source (must be 'local' or 'all')")
 
         # Validate limit
         if not isinstance(limit, int) or limit < 1:
-            return [{"error": "Limit must be a positive integer"}]
+            raise ValidationError("Limit must be a positive integer")
 
         if limit > 100:
-            return [{"error": "Limit too large (max 100)"}]
+            raise ValidationError("Limit too large (max 100)")
 
         params = {"lookfor": query.strip(), "searchSource": search_source, "view": "list"}
 
@@ -86,13 +109,13 @@ class WakeCountyLibraryScraper:
         except httpx.HTTPError as e:
             # Log detailed error internally for debugging
             logger.error(f"HTTP error during library search: {e}", exc_info=True)
-            # Return sanitized error to user
-            return [{"error": "Unable to connect to library catalog"}]
+            # Raise network error with sanitized message
+            raise NetworkError("Unable to connect to library catalog") from e
         except Exception as e:
             # Log detailed error internally for debugging
             logger.error(f"Unexpected error during library search: {e}", exc_info=True)
-            # Return generic sanitized error to user
-            return [{"error": "Search failed. Please try again later"}]
+            # Raise generic scraper error with sanitized message
+            raise ScraperError("Search failed. Please try again later") from e
 
     def _parse_results(self, html: str) -> list[dict[str, str]]:
         """Parse HTML search results.

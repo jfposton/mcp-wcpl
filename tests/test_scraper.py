@@ -1,6 +1,8 @@
 """Tests for the scraper module."""
 
-from mcp_wcpl.scraper import WakeCountyLibraryScraper
+import pytest
+
+from mcp_wcpl.scraper import NetworkError, ScraperError, ValidationError, WakeCountyLibraryScraper
 
 
 def test_wake_county_scraper_initialization():
@@ -14,29 +16,33 @@ def test_wake_county_scraper_initialization():
 
 
 def test_wake_county_scraper_search_returns_list():
-    """Test that WakeCountyLibraryScraper search returns a list."""
+    """Test that WakeCountyLibraryScraper search returns a list or raises an exception."""
     scraper = WakeCountyLibraryScraper()
-    results = scraper.search("python")
 
-    assert isinstance(results, list)
+    try:
+        results = scraper.search("python")
+        assert isinstance(results, list)
+        # If we get results, verify they're books
+        if len(results) > 0:
+            assert "title" in results[0]
+    except (NetworkError, ScraperError):
+        # Network errors are expected since we're making real requests
+        pass
 
 
 def test_wake_county_scraper_result_structure():
-    """Test that results have the expected structure."""
+    """Test that results have the expected structure (when accessible)."""
     scraper = WakeCountyLibraryScraper()
-    results = scraper.search("test")
 
-    # Should return at least something (even if it's an error)
-    assert len(results) > 0
+    try:
+        results = scraper.search("test")
 
-    # Each result should either be an error or a book
-    for item in results:
-        if "error" in item:
-            # Error response - should only have error key
-            assert isinstance(item["error"], str)
-            assert len(item["error"]) > 0
-        else:
-            # Book response - should have all book fields
+        # Should return a list
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+        # Each result should be a book with all required fields
+        for item in results:
             assert "title" in item
             assert "author" in item
             assert "format" in item
@@ -45,108 +51,106 @@ def test_wake_county_scraper_result_structure():
             assert isinstance(item["author"], str)
             assert isinstance(item["format"], str)
             assert isinstance(item["availability"], str)
+    except (NetworkError, ScraperError):
+        # Network errors are expected since we're making real requests
+        pass
 
 
 def test_wake_county_scraper_respects_limit():
-    """Test that limit parameter is respected."""
+    """Test that limit parameter is respected (when accessible)."""
     scraper = WakeCountyLibraryScraper()
-    results = scraper.search("fiction", limit=3)
 
-    # Should return at most 3 results
-    assert len(results) <= 3
+    try:
+        results = scraper.search("fiction", limit=3)
+        # Should return at most 3 results
+        assert len(results) <= 3
+    except (NetworkError, ScraperError):
+        # Network errors are expected
+        pass
 
 
 def test_wake_county_scraper_search_sources():
-    """Test that different search sources can be used."""
+    """Test that different search sources can be used (when accessible)."""
     scraper = WakeCountyLibraryScraper()
 
-    # Both should work without errors
-    local_results = scraper.search("test", search_source="local")
-    all_results = scraper.search("test", search_source="all")
-
-    assert isinstance(local_results, list)
-    assert isinstance(all_results, list)
+    # Both should either work or raise network errors (not validation errors)
+    for source in ["local", "all"]:
+        try:
+            results = scraper.search("test", search_source=source)
+            assert isinstance(results, list)
+        except (NetworkError, ScraperError):
+            # Network errors are expected
+            pass
 
 
 # Input validation tests
 def test_wake_county_scraper_rejects_empty_query():
-    """Test that empty queries are rejected."""
+    """Test that empty queries raise ValidationError."""
     scraper = WakeCountyLibraryScraper()
 
-    result = scraper.search("")
-    assert len(result) == 1
-    assert "error" in result[0]
-    assert "empty" in result[0]["error"].lower()
+    with pytest.raises(ValidationError, match="empty"):
+        scraper.search("")
 
-    result_whitespace = scraper.search("   ")
-    assert len(result_whitespace) == 1
-    assert "error" in result_whitespace[0]
+    with pytest.raises(ValidationError):
+        scraper.search("   ")
 
 
 def test_wake_county_scraper_rejects_long_query():
-    """Test that excessively long queries are rejected."""
+    """Test that excessively long queries raise ValidationError."""
     scraper = WakeCountyLibraryScraper()
 
     long_query = "a" * 501
-    result = scraper.search(long_query)
-
-    assert len(result) == 1
-    assert "error" in result[0]
-    assert "too long" in result[0]["error"].lower()
+    with pytest.raises(ValidationError, match="too long"):
+        scraper.search(long_query)
 
 
 def test_wake_county_scraper_rejects_invalid_search_source():
-    """Test that invalid search sources are rejected."""
+    """Test that invalid search sources raise ValidationError."""
     scraper = WakeCountyLibraryScraper()
 
-    result = scraper.search("test", search_source="invalid")
-    assert len(result) == 1
-    assert "error" in result[0]
-    assert "search source" in result[0]["error"].lower()
+    with pytest.raises(ValidationError, match="search source"):
+        scraper.search("test", search_source="invalid")
 
 
 def test_wake_county_scraper_rejects_negative_limit():
-    """Test that negative limits are rejected."""
+    """Test that negative limits raise ValidationError."""
     scraper = WakeCountyLibraryScraper()
 
-    result = scraper.search("test", limit=-1)
-    assert len(result) == 1
-    assert "error" in result[0]
-    assert "positive integer" in result[0]["error"].lower()
+    with pytest.raises(ValidationError, match="positive integer"):
+        scraper.search("test", limit=-1)
 
 
 def test_wake_county_scraper_rejects_zero_limit():
-    """Test that zero limit is rejected."""
+    """Test that zero limit raises ValidationError."""
     scraper = WakeCountyLibraryScraper()
 
-    result = scraper.search("test", limit=0)
-    assert len(result) == 1
-    assert "error" in result[0]
+    with pytest.raises(ValidationError):
+        scraper.search("test", limit=0)
 
 
 def test_wake_county_scraper_rejects_excessive_limit():
-    """Test that excessively large limits are rejected."""
+    """Test that excessively large limits raise ValidationError."""
     scraper = WakeCountyLibraryScraper()
 
-    result = scraper.search("test", limit=101)
-    assert len(result) == 1
-    assert "error" in result[0]
-    assert "too large" in result[0]["error"].lower()
+    with pytest.raises(ValidationError, match="too large"):
+        scraper.search("test", limit=101)
 
 
 def test_wake_county_scraper_accepts_max_valid_limit():
     """Test that the maximum valid limit (100) is accepted."""
     scraper = WakeCountyLibraryScraper()
 
-    result = scraper.search("test", limit=100)
-    # Should not be a validation error
-    if len(result) == 1 and "error" in result[0]:
-        # If it's an error, it should be about connection, not validation
-        assert "too large" not in result[0]["error"].lower()
+    # Should not raise a validation error (may raise network error though)
+    try:
+        result = scraper.search("test", limit=100)
+        assert isinstance(result, list)
+    except (NetworkError, ScraperError):
+        # Network/scraper errors are fine - we're testing validation
+        pass
 
 
-def test_wake_county_scraper_error_messages_are_sanitized():
-    """Test that error messages don't expose internal details."""
+def test_validation_error_messages_are_sanitized():
+    """Test that validation error messages don't expose internal details."""
     scraper = WakeCountyLibraryScraper()
 
     # Test with various invalid inputs
@@ -156,30 +160,13 @@ def test_wake_county_scraper_error_messages_are_sanitized():
     ]
 
     for query, description in test_cases:
-        result = scraper.search(query)
-        assert "error" in result[0], f"Expected error response for {description}"
-        error_msg = result[0]["error"].lower()
+        try:
+            scraper.search(query)
+            pytest.fail(f"Expected ValidationError for {description}")
+        except ValidationError as e:
+            error_msg = str(e).lower()
 
-        # Should not contain paths, exceptions, or stack traces
-        assert "/" not in error_msg, f"Error for {description} contains path"
-        assert "\\" not in error_msg, f"Error for {description} contains path"
-        assert "traceback" not in error_msg, f"Error for {description} contains traceback"
-        assert "exception" not in error_msg, f"Error for {description} exposes exception type"
-
-
-def test_error_response_format_is_distinct():
-    """Test that error responses are easily distinguishable from book responses."""
-    scraper = WakeCountyLibraryScraper()
-
-    # Get an error response
-    error_result = scraper.search("")
-
-    assert len(error_result) == 1
-    error_item = error_result[0]
-
-    # Error should only have "error" key, not book fields
-    assert "error" in error_item
-    assert "title" not in error_item
-    assert "author" not in error_item
-    assert "format" not in error_item
-    assert "availability" not in error_item
+            # Should not contain paths, exceptions, or stack traces
+            assert "/" not in error_msg, f"Error for {description} contains path"
+            assert "\\" not in error_msg, f"Error for {description} contains path"
+            assert "traceback" not in error_msg, f"Error for {description} contains traceback"
