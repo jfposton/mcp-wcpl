@@ -1,6 +1,20 @@
 """Tests for the MCP server."""
 
+import pytest
+
+import mcp_wcpl.server as server_module
 from mcp_wcpl.server import mcp, search_library
+
+from .conftest import MockLibraryScraper
+
+
+@pytest.fixture(autouse=True)
+def use_mock_scraper():
+    """Replace the real scraper with a mock for all tests."""
+    original_scraper = server_module.scraper
+    server_module.scraper = MockLibraryScraper()
+    yield
+    server_module.scraper = original_scraper
 
 
 def test_server_creation():
@@ -91,3 +105,36 @@ def test_search_library_returns_valid_json_structure():
     parsed = json.loads(json_str)
 
     assert parsed == result
+
+
+def test_search_library_handles_validation_errors():
+    """Test that validation errors from scraper are properly formatted."""
+    # Empty query should return error
+    result = search_library("")
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert "error" in result[0]
+    assert "empty" in result[0]["error"].lower()
+
+    # Query too long should return error
+    result = search_library("a" * 501)
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert "error" in result[0]
+    assert "too long" in result[0]["error"].lower()
+
+
+def test_search_library_error_format_is_distinct():
+    """Test that errors use the distinct error format."""
+    result = search_library("")
+
+    assert len(result) == 1
+    error_item = result[0]
+
+    # Error should only have "error" key, not book fields
+    assert "error" in error_item
+    assert "title" not in error_item
+    assert "author" not in error_item
+    assert "format" not in error_item
+    assert "availability" not in error_item

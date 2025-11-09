@@ -3,74 +3,20 @@
 This module provides the MCP server that exposes library search functionality.
 """
 
+import logging
+
 from mcp.server.fastmcp import FastMCP
+
+from mcp_wcpl.scraper import ScraperError, ValidationError, WakeCountyLibraryScraper
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Initialize the MCP server
 mcp = FastMCP("mcp-wcpl")
 
-# Mock data for testing
-MOCK_LIBRARY_DATA = [
-    {
-        "title": "Python Programming: An Introduction to Computer Science",
-        "author": "John Zelle",
-        "format": "Book",
-        "availability": "Available",
-    },
-    {
-        "title": "Learning Python",
-        "author": "Mark Lutz",
-        "format": "Book",
-        "availability": "Checked Out",
-    },
-    {
-        "title": "Python Crash Course",
-        "author": "Eric Matthes",
-        "format": "eBook",
-        "availability": "Available",
-    },
-    {
-        "title": "Automate the Boring Stuff with Python",
-        "author": "Al Sweigart",
-        "format": "Book",
-        "availability": "Available",
-    },
-    {
-        "title": "Fluent Python",
-        "author": "Luciano Ramalho",
-        "format": "Book",
-        "availability": "Available",
-    },
-    {
-        "title": "Effective Python",
-        "author": "Brett Slatkin",
-        "format": "Book",
-        "availability": "Checked Out",
-    },
-    {
-        "title": "Python Cookbook",
-        "author": "David Beazley",
-        "format": "Book",
-        "availability": "Available",
-    },
-    {
-        "title": "Python for Data Analysis",
-        "author": "Wes McKinney",
-        "format": "eBook",
-        "availability": "Available",
-    },
-    {
-        "title": "Introduction to Machine Learning with Python",
-        "author": "Andreas Müller",
-        "format": "Book",
-        "availability": "Available",
-    },
-    {
-        "title": "Django for Beginners",
-        "author": "William Vincent",
-        "format": "Book",
-        "availability": "Available",
-    },
-]
+# Initialize the scraper
+scraper = WakeCountyLibraryScraper()
 
 
 @mcp.tool()
@@ -91,6 +37,21 @@ def search_library(
         - author: Book author
         - format: Format (Book, eBook, etc.)
         - availability: Availability status
+
+        Or a single-item list with an error dictionary:
+        - error: Error message
     """
-    # Return mock data, limited by the limit parameter
-    return MOCK_LIBRARY_DATA[:limit]
+    try:
+        return scraper.search(query, searchSource, limit)
+    except ValidationError as e:
+        # Log validation errors at info level (user errors, not system errors)
+        logger.info(f"Validation error: {e}")
+        return [{"error": str(e)}]
+    except ScraperError as e:
+        # Log scraper errors at error level
+        logger.error(f"Scraper error: {e}", exc_info=True)
+        return [{"error": str(e)}]
+    except Exception as e:
+        # Catch any unexpected errors to ensure we never crash
+        logger.error(f"Unexpected error in search_library: {e}", exc_info=True)
+        return [{"error": "An unexpected error occurred. Please try again later"}]
