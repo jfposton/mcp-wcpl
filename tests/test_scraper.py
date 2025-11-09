@@ -70,16 +70,25 @@ def test_wake_county_scraper_result_structure():
     # Should return at least something (even if it's an error)
     assert len(results) > 0
 
-    # Each result should have the required fields
+    # Each result should either be a book result or an error response
     for item in results:
-        assert "title" in item
-        assert "author" in item
-        assert "format" in item
-        assert "availability" in item
-        assert isinstance(item["title"], str)
-        assert isinstance(item["author"], str)
-        assert isinstance(item["format"], str)
-        assert isinstance(item["availability"], str)
+        # Check if it's an error response
+        if "error" in item:
+            assert "message" in item
+            assert "type" in item
+            assert isinstance(item["error"], str)
+            assert isinstance(item["message"], str)
+            assert isinstance(item["type"], str)
+        else:
+            # It's a book result
+            assert "title" in item
+            assert "author" in item
+            assert "format" in item
+            assert "availability" in item
+            assert isinstance(item["title"], str)
+            assert isinstance(item["author"], str)
+            assert isinstance(item["format"], str)
+            assert isinstance(item["availability"], str)
 
 
 def test_wake_county_scraper_respects_limit():

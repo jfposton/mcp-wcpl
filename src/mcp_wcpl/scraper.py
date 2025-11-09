@@ -80,17 +80,15 @@ class WakeCountyLibraryScraper:
 
         except httpx.HTTPError as e:
             return [{
-                "title": f"Error: {str(e)}",
-                "author": "",
-                "format": "",
-                "availability": ""
+                "error": "HTTP_ERROR",
+                "message": str(e),
+                "type": "httpx.HTTPError"
             }]
         except Exception as e:
             return [{
-                "title": f"Unexpected error: {str(e)}",
-                "author": "",
-                "format": "",
-                "availability": ""
+                "error": "UNEXPECTED_ERROR",
+                "message": str(e),
+                "type": type(e).__name__
             }]
 
     def _parse_results(self, html: str) -> list[dict[str, str]]:
