@@ -1,6 +1,5 @@
 """Tests for the scraper module."""
 
-import pytest
 from mcp_wcpl.scraper import WakeCountyLibraryScraper
 
 

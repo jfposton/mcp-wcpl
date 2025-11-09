@@ -1,8 +1,11 @@
 """Tests for the MCP server."""
 
-from mcp_wcpl.server import mcp, search_library
-from mcp_wcpl.scraper import LibraryScraper
+import pytest
+
 import mcp_wcpl.server as server_module
+from mcp_wcpl.scraper import LibraryScraper
+from mcp_wcpl.server import mcp, search_library
+
 from .conftest import MockLibraryScraper
 
 
