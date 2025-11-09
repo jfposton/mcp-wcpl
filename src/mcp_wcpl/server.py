@@ -4,13 +4,13 @@ This module provides the MCP server that exposes library search functionality.
 """
 
 from mcp.server.fastmcp import FastMCP
-from mcp_wcpl.scraper import WakeCountyLibraryScraper
+from mcp_wcpl.scraper import LibraryScraper, WakeCountyLibraryScraper
 
 # Initialize the MCP server
 mcp = FastMCP("mcp-wcpl")
 
 # Initialize the scraper
-scraper = WakeCountyLibraryScraper()
+scraper: LibraryScraper = WakeCountyLibraryScraper()
 
 
 @mcp.tool()
