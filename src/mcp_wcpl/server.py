@@ -12,18 +12,16 @@ mcp = FastMCP("mcp-wcpl")
 # Initialize the scraper
 scraper: LibraryScraper = WakeCountyLibraryScraper()
 
-
 @mcp.tool()
 def search_library(
-    query: str,
-    searchSource: str = "local",
-    limit: int = 10
+    query: str, searchSource: str = "local", limit: int = 10
 ) -> list[dict[str, str]]:
     """Search the Wake County Public Library catalog for books and other materials.
 
     Args:
         query: The search term to look for in the library catalog
-        searchSource: Search scope - 'local' for Wake County only, 'all' for all NC Cardinal libraries (default: 'local')
+        searchSource: Search scope - 'local' for Wake County only, 'all' for all NC
+            Cardinal libraries (default: 'local')
         limit: Maximum number of results to return (default: 10)
 
     Returns:
