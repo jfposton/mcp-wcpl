@@ -4,29 +4,13 @@ This module provides the interface and implementation for searching the Wake Cou
 Public Library catalog.
 """
 
-from typing import Protocol
+import logging
 
 import httpx
 from bs4 import BeautifulSoup
 
-
-class LibraryScraper(Protocol):
-    """Protocol for library catalog scrapers."""
-
-    def search(
-        self, query: str, search_source: str = "local", limit: int = 10
-    ) -> list[dict[str, str]]:
-        """Search the library catalog.
-
-        Args:
-            query: Search term
-            search_source: 'local' for Wake County only, 'all' for all NC Cardinal libraries
-            limit: Maximum number of results to return
-
-        Returns:
-            List of dictionaries with keys: title, author, format, availability
-        """
-        ...
+# Configure logging for internal error details
+logger = logging.getLogger(__name__)
 
 
 class WakeCountyLibraryScraper:
@@ -66,7 +50,61 @@ class WakeCountyLibraryScraper:
         Returns:
             List of dictionaries with keys: title, author, format, availability
         """
-        params = {"lookfor": query, "searchSource": search_source, "view": "list"}
+        # Input validation
+        if not query or not query.strip():
+            return [
+                {
+                    "title": "Error: Search query cannot be empty",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
+
+        # Validate query length (most URLs have ~2000 char limit, be conservative)
+        if len(query) > 500:
+            return [
+                {
+                    "title": "Error: Search query too long (max 500 characters)",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
+
+        # Validate search source
+        if search_source not in ("local", "all"):
+            return [
+                {
+                    "title": "Error: Invalid search source (must be 'local' or 'all')",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
+
+        # Validate limit
+        if not isinstance(limit, int) or limit < 1:
+            return [
+                {
+                    "title": "Error: Limit must be a positive integer",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
+
+        if limit > 100:
+            return [
+                {
+                    "title": "Error: Limit too large (max 100)",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
+
+        params = {"lookfor": query.strip(), "searchSource": search_source, "view": "list"}
 
         try:
             response = httpx.get(
@@ -81,9 +119,29 @@ class WakeCountyLibraryScraper:
             return results[:limit]
 
         except httpx.HTTPError as e:
-            return [{"error": "HTTP_ERROR", "message": str(e), "type": "httpx.HTTPError"}]
+            # Log detailed error internally for debugging
+            logger.error(f"HTTP error during library search: {e}", exc_info=True)
+            # Return sanitized error to user
+            return [
+                {
+                    "title": "Error: Unable to connect to library catalog",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
         except Exception as e:
-            return [{"error": "UNEXPECTED_ERROR", "message": str(e), "type": type(e).__name__}]
+            # Log detailed error internally for debugging
+            logger.error(f"Unexpected error during library search: {e}", exc_info=True)
+            # Return generic sanitized error to user
+            return [
+                {
+                    "title": "Error: Search failed. Please try again later",
+                    "author": "",
+                    "format": "",
+                    "availability": "",
+                }
+            ]
 
     def _parse_results(self, html: str) -> list[dict[str, str]]:
         """Parse HTML search results.

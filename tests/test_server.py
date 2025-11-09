@@ -3,7 +3,6 @@
 import pytest
 
 import mcp_wcpl.server as server_module
-from mcp_wcpl.scraper import LibraryScraper
 from mcp_wcpl.server import mcp, search_library
 
 from .conftest import MockLibraryScraper
@@ -12,7 +11,7 @@ from .conftest import MockLibraryScraper
 @pytest.fixture(autouse=True)
 def use_mock_scraper():
     """Replace the real scraper with a mock for all tests."""
-    original_scraper: LibraryScraper = server_module.scraper
+    original_scraper = server_module.scraper
     server_module.scraper = MockLibraryScraper()
     yield
     server_module.scraper = original_scraper
