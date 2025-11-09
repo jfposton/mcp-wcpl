@@ -2,47 +2,6 @@
 
 import pytest
 from mcp_wcpl.scraper import WakeCountyLibraryScraper
-from .conftest import MockLibraryScraper
-
-
-def test_mock_scraper_returns_results():
-    """Test that MockLibraryScraper returns expected structure."""
-    scraper = MockLibraryScraper()
-    results = scraper.search("test query")
-
-    assert isinstance(results, list)
-    assert len(results) > 0
-
-
-def test_mock_scraper_respects_limit():
-    """Test that MockLibraryScraper respects the limit parameter."""
-    scraper = MockLibraryScraper()
-
-    results_2 = scraper.search("test", limit=2)
-    assert len(results_2) == 2
-
-    results_1 = scraper.search("test", limit=1)
-    assert len(results_1) == 1
-
-
-def test_mock_scraper_result_structure():
-    """Test that MockLibraryScraper returns correct data structure."""
-    scraper = MockLibraryScraper()
-    results = scraper.search("test")
-
-    for item in results:
-        assert "title" in item
-        assert "author" in item
-        assert "format" in item
-        assert "availability" in item
-        assert isinstance(item["title"], str)
-        assert isinstance(item["author"], str)
-        assert isinstance(item["format"], str)
-        assert isinstance(item["availability"], str)
-        assert len(item["title"]) > 0
-        assert len(item["author"]) > 0
-        assert len(item["format"]) > 0
-        assert len(item["availability"]) > 0
 
 
 def test_wake_county_scraper_initialization():
